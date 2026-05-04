@@ -1,0 +1,34 @@
+# Format -> <Unit name> <Op Compact Name> <Operand Use flags> <Execution Time(excluding loads and stores)> <Op Full Name>
+ADDITION ADD 111 1 "Add"
+ADDITION SUB 111 1 "Subtract"
+ADDITION NEG 101 1 "Negate"
+
+MULTIPLICATION MUL 111 10 "Multiply"
+
+SHIFT LSL 111 1 "Logical Shift Left"
+SHIFT ASR 111 1 "Arithmetic Shift Right"
+SHIFT LSR 111 1 "Logical Shift Right"
+
+DIVISION DIV 111 80 "Divide"
+
+LOADSTORE MOV 111 1 "Move/Copy"
+
+FLOW JMP 001 0 "Jump"
+FLOW CALL 001 3 "Call"
+FLOW RETURN 000 2 "Return"
+FLOW SYSCALL 001 3 "System Call"
+FLOW SYSRET 000 2 "System Call Return"
+
+BRANCH BAS 201 1 "Branch Absolute on Set"
+BRANCH BAC 201 1 "Branch Absolute on Carry"
+BRANCH BRS 201 2 "Branch Relative on Set"
+BRANCH BRC 201 2 "Branch Relative on Carry"
+BRANCH CCAS 201 4 "Conditional Call Absolute on Set"
+BRANCH CCAC 201 4 "Conditional Call Absolute on Carry"
+BRANCH CCRS 201 5 "Conditional Call Relative on Set"
+BRANCH CCRC 201 5 "Conditional Call Relative on Carry"
+
+BITWISE AND 111 1 "Bitwise AND"
+BITWISE OR 111 1 "Bitwise OR"
+BITWISE XOR 111 1 "Bitwise XOR"
+BITWISE NOT 101 1 "Bitwise NOT"
