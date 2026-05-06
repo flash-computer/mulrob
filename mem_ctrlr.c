@@ -1,6 +1,7 @@
-#ifndef PRM_CACHE_SIZES
-	#define PRM_CACHE_SIZES(level) cache_sizes
+#ifndef PRM_INTERNALS
+	#define PRM_INTERNALS
 #endif
+#include<mulrob.h>
 
 void update_cache_access(PRS_cpu *c, index level, PRS_ACache *cch, PRS_ACacheLine *line)	// Update the Cache Line linked list for LRU replacement
 {
@@ -35,12 +36,12 @@ void update_cache_access(PRS_cpu *c, index level, PRS_ACache *cch, PRS_ACacheLin
 	{
 		cch->lines[cch->last].next = line;
 		line->prev = cch->lines + cch->last;
-		cch->line = linedex;
 	}
+	cch->first = linedex;
 	return;
 }
 
-void sync_cache_line(PRS_cpu *c, index level, PRS_ACache *cch; PRS_ACacheLine line)
+void sync_cache_line(PRS_cpu *c, index level, PRS_ACache *cch, PRS_ACacheLine line)
 {
 	if(level >= PRC_CACHES || !c)
 	{
@@ -49,7 +50,7 @@ void sync_cache_line(PRS_cpu *c, index level, PRS_ACache *cch; PRS_ACacheLine li
 
 	if(level < PRC_CACHES)
 	{
-		PRS_ACache *cch = (c->mem.caches + level);
+		cch = (c->mem.caches + level);
 	}
 	else if(cch == NULL)
 	{
@@ -75,7 +76,7 @@ void sync_cache_line(PRS_cpu *c, index level, PRS_ACache *cch; PRS_ACacheLine li
 }
 
 // If level is less than PRC_CACHES. The cache is taken to be the corresponding cache from the Memory Unit
-PRS_OPReturn replace_cache_line(PRS_cpu *c, index level, PRS_ACache *cch; PRS_ACacheLine line)
+PRS_OPReturn replace_cache_line(PRS_cpu *c, index level, PRS_ACache *cch, PRS_ACacheLine line)
 {
 	if(level >= PRC_CACHES || !c)
 	{
@@ -84,7 +85,7 @@ PRS_OPReturn replace_cache_line(PRS_cpu *c, index level, PRS_ACache *cch; PRS_AC
 
 	if(level < PRC_CACHES)
 	{
-		PRS_ACache *cch = (c->mem.caches + level);
+		cch = (c->mem.caches + level);
 	}
 	else if(cch == NULL)
 	{
@@ -95,7 +96,7 @@ PRS_OPReturn replace_cache_line(PRS_cpu *c, index level, PRS_ACache *cch; PRS_AC
 	{
 		PRM_ERROR(PRC_E_UNFITSTRUCTSTATE);
 	}
-	PRS_ACacheLine *rep = cch->lines[cch->first];
+	PRS_ACacheLine *rep = cch->lines + cch->first;
 	index repdex = cch->first;
 
 	if(level < PRC_CACHES && !(rep->synced))
@@ -170,13 +171,13 @@ int init_memory_unit(PRS_MemUnit *mem)
 	{
 		return 1;
 	}
-	if(!init_primary_mem(mem->mem))
+	if(!init_primary_mem(&(mem->mem)))
 	{
 		return 1;
 	}
 	for(index i=0; i<PRC_CACHES; i++)
 	{
-		if(init_acache(mem->caches+i), cache_sizes(i))
+		if(init_acache(mem->caches+i, cache_sizes(i)))
 		{
 			return 1;
 		}
@@ -184,15 +185,12 @@ int init_memory_unit(PRS_MemUnit *mem)
 	return 0;
 }
 
-PRS_OPReturn prisc_memrd(cpu c, word address, PRS_ACacheLine *lineout)
+/* TODO: Rewrite needed
+PRS_OPReturn prisc_memrd(PRS_cpu *c, word address, PRS_ACacheLine *lineout)
 {
-	if(!cpu->mem)
-	{
-		PRM_ERROR(PRC_E_NOMEM);
-	}
 	word cc = (((address & WORD(0xFFF00000))>>20) & WORD(0xFFF));
 	word off = (address & WORD(0x000FFFFF));
-	chunk rd = cpu->mem.chunks[cc].rd;
+	chunk rd = c->mem.chunks[cc].rd;
 	if(!(rd->mem))
 	{
 		return (PRS_ACacheLineReturn){(PRS_OPReturn){PRC_STATUS_FALIURE, 0, 1, PRC_F_UNMAPPED_MEM}, line};
@@ -209,3 +207,4 @@ PRS_OPReturn prisc_memrd(cpu c, word address, PRS_ACacheLine *lineout)
 	}
 	return (PRS_ACacheLineReturn){(PRS_OPReturn){PRC_STATUS_SUCCESS, 0, 1, PRC_F_UNMAPPED_MEM}, line};
 }
+*/

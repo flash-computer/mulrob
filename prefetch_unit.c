@@ -1,3 +1,8 @@
+#ifndef PRM_INTERNALS
+	#define PRM_INTERNALS
+#endif
+#include<mulrob.h>
+
 // TODO: Actually writing this logic
 #ifdef PRM_MULROB
 

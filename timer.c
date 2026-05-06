@@ -1,14 +1,21 @@
-#define SEASALT (c->cyl)
-#define INEEDYOUSEASALT {SEASALT++;}
+#ifndef PRM_INTERNALS
+	#define PRM_INTERNALS
+#endif
+#include<mulrob.h>
 
-// Rememeber to do a bounds check before using these
-#define PRM_REF_REG(c, reg) ((c)->prf.regs[(reg)])
-#define PRM_WRITE_REG(c, reg, val, width) {if(width < PRC_WORD_SZ){word writeregmacro_mask = ((1<<(width<<3))-1); PRM_REF_REG((c), (reg)) = ((PRM_REF_REG((c), (reg)) & (~writeregmacro_mask)) | ((val) & (writeregmacro_mask)));}else{PRM_REF_REG((c), (reg)) = (val);}}
-
+// Broadcast the retirement of an instruction
 // TODO: Add logic for Broadcasts which the RAT cache will use in the multiple ROB architecture
+void broadcast_rtu_retirement(PRS_cpu *c, index roben)
+{
+}
+
 void retirement_unit(PRS_cpu *c)
 {
-	PRS_RetUnit *rtu = &(c->rtu);
+	if(!c)
+	{
+		PRM_ERROR(PRC_E_UNEXPECTED);
+	}
+	PRS_RTUnit *rtu = &(c->rtu);
 	PRS_ROBEntry re = PRM_ROB_RT(PRM_CROB(c));
 	PRS_ROBDestEntry dest;
 	PRS_OPReturn opr;
@@ -71,6 +78,7 @@ void retirement_unit(PRS_cpu *c)
 		default:
 			PRM_ERROR(PRC_E_UNEXPECTED);
 	}
+	broadcast_rtu_retirement(c, PRM_CROB(c).rt);
 	(PRM_CROB(c).rt)++;
 	return;
 
@@ -97,14 +105,10 @@ void retirement_unit(PRS_cpu *c)
 		purge_execution_unit(c);
 		purge_prefetch_unit(c);
 		purge_loadstore_unit(c);
-		#ifdef PRM_MULROB
-			for(index i=0; i<PRC_ROBS; i++)
-			{
-				reset_rob(c->robs + i);
-			}
-		#else
-			reset_rob(&(c->rob));
-		#endif
+		for(index i=0; i<PRC_ROBS; i++)
+		{
+			reset_rob(c->robs + i);
+		}
 		INEEDYOUSEASALT;
 
 		rtu->engaged = false;
@@ -151,15 +155,18 @@ void retirement_unit(PRS_cpu *c)
 		}
 
 		PRM_PRF_REG(c, RSP) += PRC_WORD_SZ;
-		opr = read_mem_free(WORD(0xFFFFFFFF), PRC_WORD_SZ);
-		SEASALT += opr.time;
+
+		// TODO: Replace with proper read
+		/* opr = read_mem_free(WORD(0xFFFFFFFF), PRC_WORD_SZ);
+
 		if(!opr.success)
 		{
 			reset_cpu(c);
 			return;
 		}
+		*/
 
-		PRM_PRF_REG(c, RIP) = PRM_WRAP_WORD(PRC_FAULT_TABLE_ADDR + dest.iden);
+		PRM_PRF_REG(c, RIP) = PRC_FAULT_TABLE_ADDR + dest.iden;
 		INEEDYOUSEASALT;
 
 		return;
@@ -170,14 +177,10 @@ void retirement_unit(PRS_cpu *c)
 		purge_execution_unit(c);
 		purge_prefetch_unit(c);
 		purge_loadstore_unit(c);
-		#ifdef PRM_MULROB
-			for(index i=0; i<PRC_ROBS; i++)
-			{
-				reset_rob(c->robs + i);
-			}
-		#else
-			reset_rob(&(c->rob));
-		#endif
+		for(index i=0; i<PRC_ROBS; i++)
+		{
+			reset_rob(c->robs + i);
+		}
 		INEEDYOUSEASALT;
 
 		PRM_PRF_REG(c, RIP) = re.val;
@@ -223,7 +226,7 @@ void loadstore_unit(PRS_cpu *c)
 
 void timer_unit(PRS_cpu *c)
 {
-	if(!(c->cpu_init_check == true))
+	if(!c)
 	{
 		PRM_ERROR(PRC_E_UNFITSTRUCTSTATE);
 	}

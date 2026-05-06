@@ -1,66 +1,16 @@
-#include<stdio.h>
-#include<stdlib.h>
-#include<bool.h>
-#include<stdint.h>
-#include<limits.h>
-
-typedef unsigned char uch;
-typedef uint32_t u32;
-typedef uintmax_t umx;
-typedef size_t szt;
-
-#ifndef N_ROB
-	#define N_ROB 1
+#ifndef PRM_INTERNALS
+	#define PRM_INTERNALS
 #endif
+#include<mulrob.h>
 
-#define R1 1
-#define R2 2
-#define R3 3
-#define R4 4
-#define R5 5
-#define R6 6
-#define R7 7
-#define R8 8
-#define R9 9
-#define R10 10
-#define R11 11
-#define R12 12
-#define R13 13
-#define R14 14
-#define R15 15
-#define R16 16
-#define R17 17
-#define R18 18
-#define R19 19
-#define R20 20
-#define R21 21
-#define R22 22
-#define R23 23
-
-#define R24 24
-#define RIP R24	// Instruction Pointer
-
-#define R25 25
-#define RSP R25	// Stack Pointer
-
-#define R26 26
-#define RFP R26	// Frame Pointer
-
-#define R27 27
-#define RFG R27	// Flags Register
-
-#define PRO_IM 28	// Immediate Proxy (Absolute for Destination)
-#define PRO_AB 39	// Absolute Proxy (Indirect for Destination)
-#define PRO_AF 30	// Absolute Address Formulation
-#define PRO_FF 31	// Flag Formulation (Operand bytes skipped for destination (still counted in instruction length for simplicity))
-
-PRS_OPReturn PreDecode(PRS_cpu *c, word inst)
+/* TODO: Rewrite needed
+PRS_OPReturn pre_decode(PRS_cpu *c, word inst)
 {
 	if(!c)
 	{
 		PRM_ERROR(PRC_E_UNEXPECTED);
 	}
-	for(szt i=0; i<N_ROB; i++)
+	for(index i=0; i<PRC_ROBS; i++)
 	{
 		if(((c->pf_ptr[i] - c->mem_offset) < mem_size) && (c->pf_ptr[i] >= c->mem_offset))
 		{
@@ -94,7 +44,7 @@ bool InstructionLength(cpu *c, u32 ptr)
 
 // TODO: Replace these TODOs about bounds checking and the associated bounds checked access with a MACRO that queues issues a load in the ROB instead
 // TODO: Change the post fetch register ops to prefetch width ops, as per the new ISA design
-u32 DecodeSrcOperand(cpu *c, u32 ptr)
+u32 decode_src_operand(cpu *c, u32 ptr)
 {
 	if((ptr & 0x3) % 3)
 	{
@@ -169,3 +119,4 @@ u32 DecodeSrcOperand(cpu *c, u32 ptr)
 	}
 	exit(2);
 }
+*/

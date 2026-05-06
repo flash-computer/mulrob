@@ -1,8 +1,18 @@
+#ifndef PRM_INTERNALS
+	#define PRM_INTERNALS
+#endif
+#include<mulrob.h>
+
 void init_loadstore_unit(PRS_LSUnit *lsu)
 {
 	if(!lsu)
 	{
 		PRM_ERROR(PRC_E_UNFITSTRUCTSTATE);
+	}
+
+	for(index i=0; i<PRC_INSTRUCTIONLOADERS; i++)
+	{
+		lsu->iloaders[i].busy = PRC_STATUS_FREE;
 	}
 
 	for(index i=0; i<PRC_LOADERS; i++)
@@ -20,6 +30,7 @@ void init_loadstore_unit(PRS_LSUnit *lsu)
 
 PRS_OPReturn write_mem_loadstore(PRS_cpu *c, word addr, word val, PRS_WORD_SZ width)
 {
+	PRS_LSUnit *lsu = &(c->lsu);
 	for(index i=0; i<PRC_STORERS; i++)
 	{
 		if(!(lsu->storers[i].busy))
@@ -31,14 +42,16 @@ PRS_OPReturn write_mem_loadstore(PRS_cpu *c, word addr, word val, PRS_WORD_SZ wi
 			ls->val = val;
 			ls->width = width;
 			// TODO
-			return /*something*/ ;
+			// return /*something*/ ;
 		}
 	}
 	return (PRS_OPReturn){0, 1, false, PRC_FAULT_RETRY};
 }
 
+// TODO: Adapt this to also work for the iloaders
 PRS_OPReturn read_mem_loadstore(PRS_cpu *c, word addr, word val, PRS_WORD_SZ width)
 {
+	PRS_LSUnit *lsu = &(c->lsu);
 	for(index i=0; i<PRC_LOADERS; i++)
 	{
 		if(!lsu->storers[i].busy)
@@ -57,17 +70,19 @@ PRS_OPReturn read_mem_loadstore(PRS_cpu *c, word addr, word val, PRS_WORD_SZ wid
 
 PRS_OPReturn query_store_finished(PRS_cpu *c, index store_index)
 {
+	PRS_LSUnit *lsu = &(c->lsu);
 	switch(lsu->storers[store_index].busy)
 	{
 		case PRC_STATUS_BUSY:
-			return (PRS_OPReturn){PRS_STATUS_BUSY, 0, lsu->storers[store_index].status.cyl, 0};
+			return (PRS_OPReturn){PRC_STATUS_BUSY, 0, lsu->storers[store_index].status.cyl, 0};
 		case PRC_STATUS_SUCCESS:
 			return lsu->storers[store_index].status;
 		default:
-			return (PRS_OPReturn){PRS_STATUS_FREE, 0, 0, 0};	// Be warned that this is indistinguishable from a faliure state without checking the busy status on the caller side manually. Ofcourse, it is because it's just undefined in the hardware to make this query to a unit that you know is or was not busy
+			return (PRS_OPReturn){PRC_STATUS_FREE, 0, 0, 0};	// Be warned that this is indistinguishable from a faliure state without checking the busy status on the caller side manually. Ofcourse, it is because it's just undefined in the hardware to make this query to a unit that you know is or was not busy
 	}
 }
 
+// TODO: Add loader logic for the iloader
 void loadstore_unit(PRS_cpu *c)
 {
 	PRS_LSUnit *lsu = &(c->lsu);
@@ -84,7 +99,7 @@ void loadstore_unit(PRS_cpu *c)
 				cost = 0;
 				if(ls->status.cyl >= cost)
 				{
-					opr = query_data_in_cache(c->mem->caches + j, ls->addr, ls->width);
+					opr = query_data_in_cache(c->mem.caches + j, ls->addr, ls->width);
 					if(!opr.success)
 					{
 						if(opr.fault == PRC_FAULT_CACHEMISS)
@@ -92,17 +107,17 @@ void loadstore_unit(PRS_cpu *c)
 							continue;
 						}
 						//TODO: Update ROB Entry with the fault if tied to one
-						lsu->status.success = PRC_STATUS_FALIURE;
-						lsu->status.fault = opr.fault;
-						lsu->status.val = opr.val;
-						lsu->busy = PRC_STATUS_SUCCESS;
+						ls->status.success = PRC_STATUS_FALIURE;
+						ls->status.fault = opr.fault;
+						ls->status.val = opr.val;
+						ls->busy = PRC_STATUS_SUCCESS;
 						goto next_loader;
 					}
 					else
 					{
 						//TODO: Update ROB Entry if associated with one
 						ls->busy = PRC_STATUS_SUCCESS;
-						ls->status.success = PRC_STATUS_SUCESS;
+						ls->status.success = PRC_STATUS_SUCCESS;
 						ls->status.val = opr.val;
 						ls->status.fault = 0;
 						//TODO: Propogate cache line downwards
@@ -113,7 +128,7 @@ void loadstore_unit(PRS_cpu *c)
 			}
 			// I know I'm not doing this 100% right considering only one way costs of memory accesses where the operations in memory and cache happen at the tail end of each access, but unless the exact timing of a write in the memory comes into play somehow (it shouldn't, but with multiple addresses pointing to the same physical memory location, it might. That is an edge case I've chosen to sacrifice for simplicity even if this emulator's memory architecture does support those configurations), it should be fine.
 			cost += cache_fetch_costs(PRC_CACHES);	// Cost of memory access
-			if(status.cyl >= cost)
+			if(ls->status.cyl >= cost)
 			{
 				//TODO
 				//prisc_memrd()
