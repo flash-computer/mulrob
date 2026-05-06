@@ -2,13 +2,22 @@
 	#define PRM_CACHE_SIZES(level) cache_sizes
 #endif
 
-void update_cache_access(PRS_cpu *c, index level, PRS_ACacheLine *line) // Update the Cache Line linked list for LRU replacement
+void update_cache_access(PRS_cpu *c, index level, PRS_ACache *cch, PRS_ACacheLine *line)	// Update the Cache Line linked list for LRU replacement
 {
-	if(level >= PRC_CACHES || !c || !line)
+	if(level >= PRC_CACHES || !c)
 	{
 		PRM_ERROR(PRC_E_UNEXPECTED);
 	}
-	PRS_ACache *cch = (c->mem.caches + level);
+
+	if(level < PRC_CACHES)
+	{
+		PRS_ACache *cch = (c->mem.caches + level);
+	}
+	else if(cch == NULL)
+	{
+		PRM_ERROR(PRC_E_UNEXPECTED);
+	}
+
 	index linedex = line - cch->lines;
 	if(line->prev)
 	{
@@ -31,13 +40,57 @@ void update_cache_access(PRS_cpu *c, index level, PRS_ACacheLine *line) // Updat
 	return;
 }
 
-PRS_OPReturn replace_cache_line(PRS_cpu *c, index level, PRS_ACacheLine line)
+void sync_cache_line(PRS_cpu *c, index level, PRS_ACache *cch; PRS_ACacheLine line)
 {
 	if(level >= PRC_CACHES || !c)
 	{
 		PRM_ERROR(PRC_E_UNEXPECTED);
 	}
-	PRS_ACache *cch = (c->mem.caches + level);
+
+	if(level < PRC_CACHES)
+	{
+		PRS_ACache *cch = (c->mem.caches + level);
+	}
+	else if(cch == NULL)
+	{
+		PRM_ERROR(PRC_E_UNEXPECTED);
+	}
+
+	PRS_ACacheLine *sync = NULL;
+	for(index i=0; i<cch->size; i++)	// TOCONSIDER: Instead of iterating on the array, iterate on the linked list instead. It might be faster when the cache is not filled and there'd be no need to check sync->filled
+	{
+		sync = cch->lines + i;
+		if(sync->addr & PRC_CACHELINEMASK == line.addr && sync->filled)
+		{
+			for(index j=0; j<(1<<PRC_CACHELINEWIDTH); j++)
+			{
+				sync->line[i] = line.line[i];
+			}
+			sync->synced = line.synced;	// Since a sync request always comes from a lower cache, the sync state will be reflected in this line. Having it be always be false and only calling sync_line when the line is indeed unsynced is a valid optimization as well. This is just a slightly more general way to do it.
+			update_cache_access(c, level, NULL, sync);
+			return;
+		}
+	}
+	PRM_ERROR(PRC_E_UNEXPECTED);	// If a sync_cache_line request is being made. It should be made to a as large or higher level cache, which should always atleast contain all lines from it's lower level counterparts. For a single core processor like this one atleast.
+}
+
+// If level is less than PRC_CACHES. The cache is taken to be the corresponding cache from the Memory Unit
+PRS_OPReturn replace_cache_line(PRS_cpu *c, index level, PRS_ACache *cch; PRS_ACacheLine line)
+{
+	if(level >= PRC_CACHES || !c)
+	{
+		PRM_ERROR(PRC_E_UNEXPECTED);
+	}
+
+	if(level < PRC_CACHES)
+	{
+		PRS_ACache *cch = (c->mem.caches + level);
+	}
+	else if(cch == NULL)
+	{
+		PRM_ERROR(PRC_E_UNEXPECTED);
+	}
+
 	if(cch->first >= cch->size)
 	{
 		PRM_ERROR(PRC_E_UNFITSTRUCTSTATE);
@@ -45,8 +98,21 @@ PRS_OPReturn replace_cache_line(PRS_cpu *c, index level, PRS_ACacheLine line)
 	PRS_ACacheLine *rep = cch->lines[cch->first];
 	index repdex = cch->first;
 
+	if(level < PRC_CACHES && !(rep->synced))
+	{
+		if(level < PRC_CACHES - 1)
+		{
+			sync_cache_line(c, level+1, NULL, *rep);
+		}
+		else
+		{
+			//TODO: write the cache line to memory
+			//prisc_memrd()
+		}
+	}
+
 	rep->filled = true;
-	rep->synced = line.synced;
+	rep->synced = true;	// Since a replacement always comes from a higher cache, this line in the cache is synced with it's elder at the time of this update
 	rep->addr = line.addr;
 	for(index i=0; i<(1<<PRC_CACHELINEWIDTH); i++)
 	{

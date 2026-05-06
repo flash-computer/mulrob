@@ -135,7 +135,7 @@ void retirement_unit(PRS_cpu *c)
 					reset_cpu(c);
 					return;
 				}
-				if(opr.success = PRC_STATUS_SUCESS)
+				if(opr.success = PRC_STATUS_SUCCESS)
 				{
 					break;
 				}

@@ -20,7 +20,7 @@ typedef enum
 typedef enum
 {
 	PRC_STATUS_FALIURE = 0x0,
-	PRC_STATUS_FREE = PRC_STATUS_FALIURE, // Only defined in certain conditions, like if a loadstore unit is busy or free. Undefined otherwise.
+	PRC_STATUS_FREE = PRC_STATUS_FALIURE,	// Only defined in certain conditions, like if a loadstore unit is busy or free. Undefined otherwise.
 	PRC_STATUS_SUCCESS = 0x1,
 	PRC_STATUS_BUSY = 0x2
 } PRS_STATUS;
@@ -30,6 +30,11 @@ typedef enum
 	PRC_DESTTYPE_REG, PRC_DESTTYPE_MEM, PRC_DESTTYPE_FAULT
 } PRS_DESTTYPE;
 
+typedef enum
+{
+	PRC_RATENTRY_REG, PRC_REGENTRY_ROB
+} PRS_RATENTRYTYPE;
+
 /* ----------------------------------- STRUCTS ----------------------------------- */
 /* ----------------------------------- ======= ----------------------------------- */
 /* ----------------------------------- ======= ----------------------------------- */
@@ -37,16 +42,16 @@ typedef enum
 typedef struct
 {
 	byte op;
-	word s1; // Source operand 1
-	word s2; // Source operand 2
+	word s1;	// Source operand 1
+	word s2;	// Source operand 2
 }
 
 typedef struct
 {
-	PRS_STATUS success; // Was operation successful
-	word val;  // Value of operation
-	umax cyl; // Cycle cost of operation
-	word fault; // If operation was unsuccessful, this is the fault that was generated
+	PRS_STATUS success;	// Was operation successful
+	word val; 	// Value of operation
+	umax cyl;	// Cycle cost of operation
+	word fault;	// If operation was unsuccessful, this is the fault that was generated
 } PRS_OPReturn;
 
 typedef struct
@@ -75,7 +80,7 @@ typedef struct
 
 typedef struct
 {
-	bool engaged; // Is the Unit busy with writing to memory
+	bool engaged;	// Is the Unit busy with writing to memory
 	index store_index;
 	umax rem_time;
 	PRS_OPreturn opr;
@@ -95,25 +100,31 @@ typedef struct
 {
 	PRS_LoaderStorer loaders[PRC_LOADERS];
 	PRS_LoaderStorer storer[PRC_STORERS];
-} PRS_LSUnit; // The Loadstore unit
+} PRS_LSUnit;	// The Loadstore unit
 
 typedef struct
 {
 	bool filled;
-	bool synced;
+	bool synced;	// If the cache line is synced with the one above it
 	word addr;
 	byte line[1<<PRC_CACHELINEWIDTH];
-	PRS_ACacheLine *next; // Next in line to be replaced, using the LRU heuristic
+	PRS_ACacheLine *next;	// Next in line to be replaced, using the LRU heuristic
 	PRS_ACacheLine *prev;
 } PRS_ACacheLine;
 
 typedef struct
 {
-	PRS_ACacheLine *lines; // Array of CacheLines
+	PRS_ACacheLine *lines;	// Array of CacheLines
 	index size;
-	index first; // Index of the next CacheLine to replace.
+	index first;	// Index of the next CacheLine to replace.
 	index last;
 } PRS_ACache;
+
+typedef struct
+{
+	PRS_RATENTRYTYPE type;
+	word ref;
+} PRS_RATEntry;
 
 typedef struct
 {
@@ -135,7 +146,7 @@ typedef struct
 {
 	word addr;
 	RATCacheEntry *rce;
-} PRS_BBEntry; // Branch Buffer Entry
+} PRS_BBEntry;	// Branch Buffer Entry
 
 typedef struct
 {
@@ -144,16 +155,16 @@ typedef struct
 
 typedef struct
 {
-	word regs[32]; // Registers 0-27 are valid registers. Registers 28-31 aren't physically there in hardware, I just feel 32 is a cleaner number
+	word regs[32];	// Registers 0-27 are valid registers. Registers 28-31 aren't physically there in hardware, I just feel 32 is a cleaner number
 
 	PRS_RATable rat;
-} PRS_PRFile; // The Primary Register File
+} PRS_PRFile;	// The Primary Register File
 
 typedef struct
 {
 	byte *mem;
-	byte width:10; // Bitwidth of the memory chunk. The mem pointer should be valid for accessing all unsigned offsets fitting in this value
-	bool wrap; // If true, wrap the chunk after the bitwidth, otherwise fetch nulls;
+	byte width:10;	// Bitwidth of the memory chunk. The mem pointer should be valid for accessing all unsigned offsets fitting in this value
+	bool wrap;	// If true, wrap the chunk after the bitwidth, otherwise fetch nulls;
 } PRS_Chunk;
 
 typedef struct
@@ -193,6 +204,12 @@ typedef struct
 	#endif
 
 	PRS_PRFile prf;
+	PRS_RATable rat;
+
+	umax rtu_stall;
+	umax lsu_stall;
+	umax pfu_stall;
+	umax exu_stall;
 
 	PRS_MeUnit mem;
 } PRS_cpu;
