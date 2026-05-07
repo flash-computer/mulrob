@@ -28,6 +28,21 @@ void init_loadstore_unit(PRS_LSUnit *lsu)
 	return;
 }
 
+// Use safely
+word get_little_endian(char *address, PRS_WORD_SZ width)
+{
+	switch(width)
+	{
+		case PRC_WORD_SZ:
+			return ((word)(0xFF & address[0])<<24) + ((word)(0xFF & address[1])<<16) + ((word)(0xFF & address[2])<<8) + ((word)(0xFF & address[3]));
+		case PRC_HWORD_SZ:
+			return ((word)(0xFF & address[0])<<8) + ((word)(0xFF & address[1]));
+		case PRC_BYTE_SZ:
+		default:
+			return ((word)(0xFF & address[0]));
+	}
+}
+
 PRS_OPReturn write_mem_loadstore(PRS_cpu *c, word addr, word val, PRS_WORD_SZ width)
 {
 	PRS_LSUnit *lsu = &(c->lsu);
@@ -60,7 +75,7 @@ PRS_OPReturn read_mem_loadstore(PRS_cpu *c, word addr, PRS_WORD_SZ width)
 			ls->status.cyl = 0;
 			ls->busy = PRC_STATUS_BUSY;
 			ls->addr = addr;
-			ls->val = val;
+			ls->val = 0;
 			ls->width = width;
 			// TODO
 		}
@@ -68,21 +83,69 @@ PRS_OPReturn read_mem_loadstore(PRS_cpu *c, word addr, PRS_WORD_SZ width)
 	return (PRS_OPReturn){0, 1, false, PRC_FAULT_RETRY};
 }
 
-PRS_OPReturn query_store_finished(PRS_cpu *c, index store_index)
+PRS_OPReturn query_store_finished(PRS_cpu *c, index idx)
 {
+	if(!c || idx >= PRC_STORERS)
+	{
+		PRM_ERROR(PRC_E_UNEXPECTED);
+	}
 	PRS_LSUnit *lsu = &(c->lsu);
-	switch(lsu->storers[store_index].busy)
+	switch(lsu->storers[idx].busy)
 	{
 		case PRC_STATUS_BUSY:
-			return (PRS_OPReturn){PRC_STATUS_BUSY, 0, lsu->storers[store_index].status.cyl, 0};
+			return (PRS_OPReturn){PRC_STATUS_BUSY, 0, lsu->storers[idx].status.cyl, 0};
 		case PRC_STATUS_SUCCESS:
-			return lsu->storers[store_index].status;
+			return lsu->storers[idx].status;
 		default:
 			return (PRS_OPReturn){PRC_STATUS_FREE, 0, 0, 0};	// Be warned that this is indistinguishable from a faliure state without checking the busy status on the caller side manually. Ofcourse, it is because it's just undefined in the hardware to make this query to a unit that you know is or was not busy
 	}
 }
 
+PRS_OPReturn query_load_finished(PRS_cpu *c, index idx)
+{
+	if(!c || idx >= PRC_LOADERS + PRC_INSTRUCTIONLOADERS)
+	{
+		PRM_ERROR(PRC_E_UNEXPECTED);
+	}
+	PRS_LSUnit *lsu = &(c->lsu);
+	PRS_LoaderStorer *ls = (idx < PRC_LOADERS)? (lsu->loaders + idx): (lsu->iloaders + (idx - PRC_LOADERS));
+	switch(ls->busy)
+	{
+		case PRC_STATUS_BUSY:
+			return (PRS_OPReturn){PRC_STATUS_BUSY, 0, ls->status.cyl, 0};
+		case PRC_STATUS_SUCCESS:
+			return ls->status;
+		default:
+			return (PRS_OPReturn){PRC_STATUS_FREE, 0, 0, 0};
+	}
+}
+
+PRS_OPReturn query_data_in_cache(PRS_ACache *cch, word addr, PRS_WORD_SZ width)
+{
+	if(!cch)
+	{
+		PRM_ERROR(PRC_E_UNEXPECTED)
+	}
+	// TODO: Add support for unaligned loads and stroes
+	word load_align_mask = width - 1;
+	if(addr & load_align_mask)
+	{
+		return (PRS_OPReturn){PRC_STATUS_FALIURE, 0, 1, PRC_FAULT_UNALIGNEDACCESS};
+	}
+	addr &= (~load_align_mask);
+	word lineaddr = addr & PRC_CACHELINEMASK;
+	for(index i=0; i<cch->size; i++)
+	{
+		if(cch->lines[i].addr & PRC_CACHELINEMASK == lineaddr)
+		{
+			return (PRS_OPReturn){PRC_STATUS_SUCCESS, get_little_endian(cch->lines[i].line + (addr & ~PRC_CACHELINEMASK), width), 1, 0};
+		}
+	}
+	return (PRS_OPReturn){PRC_STATUS_FALIURE, 0, 1, PRC_FAULT_CACHEMISS};
+}
+
 // TODO: Add loader logic for the iloader
+// TODO: Add support for loads and stores crossing the cache line boundary. Currently, trying to make such a load or store is just an error, and so loads and stores must be aligned to their width.
 void loadstore_unit(PRS_cpu *c)
 {
 	PRS_LSUnit *lsu = &(c->lsu);

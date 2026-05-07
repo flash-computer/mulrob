@@ -14,15 +14,17 @@ typedef enum
 {
 	PRC_E_ALLCLEAR = 0,
 	PRC_E_UNEXPECTED = 0x1,
-	PRC_E_UNFITSTRUCTSTATE = 0x2
+	PRC_E_UNFITSTRUCTSTATE = 0x2,
+	PRC_E_UNDEFINEDINSTRUCTION = 0x3
 } PRS_ERRORS;
 
 typedef enum
 {
 	// Faults
 	PRC_FAULT_MEMACCESS = 0,
+	PRC_FAULT_UNALIGNEDACCESS = 1,
 	// Reset vector
-	PRC_FAULT_RESET = (1<<PRC_FAULT_TABLE_WIDTH) - 1;
+	PRC_FAULT_RESET = (1<<PRC_FAULT_TABLE_WIDTH) - 1,
 	// Not really faults
 	PRC_FAULT_RETRY = (1<<PRC_FAULT_TABLE_WIDTH) + 1,
 	PRC_FAULT_CACHEMISS = (1<<PRC_FAULT_TABLE_WIDTH) + 2
@@ -40,7 +42,10 @@ typedef enum
 	PRC_STATUS_FALIURE = 0x0,
 	PRC_STATUS_FREE = PRC_STATUS_FALIURE,	// Only defined in certain conditions, like if a loadstore unit is busy or free. Undefined otherwise.
 	PRC_STATUS_SUCCESS = 0x1,
-	PRC_STATUS_BUSY = 0x2
+	PRC_STATUS_BUSY = 0x2,
+	// For use by the decode unit
+	PRC_DECODE_REG  = 0x0,
+	PRC_DECODE_ADDRESS = 0x1
 } PRS_STATUS;
 
 typedef enum
@@ -63,6 +68,12 @@ typedef struct
 	word s1;	// Source operand 1
 	word s2;	// Source operand 2
 } instruction;
+
+typedef struct
+{
+	word i;
+	word ops[3];
+} PRS_RAWinstruction;
 
 typedef struct
 {

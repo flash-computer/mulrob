@@ -129,7 +129,8 @@
 	void init_loadstore_unit(PRS_LSUnit *lsu);
 	PRS_OPReturn write_mem_loadstore(PRS_cpu *c, word addr, word val, PRS_WORD_SZ width);
 	PRS_OPReturn read_mem_loadstore(PRS_cpu *c, word addr, PRS_WORD_SZ width);
-	PRS_OPReturn query_store_finished(PRS_cpu *c, index store_index);
+	PRS_OPReturn query_store_finished(PRS_cpu *c, index idx);
+	PRS_OPReturn query_load_finished(PRS_cpu *c, index idx);
 
 	void update_cache_access(PRS_cpu *c, index level, PRS_ACache *cch, PRS_ACacheLine *line);
 	PRS_OPReturn query_data_in_cache(PRS_ACache *cch, word addr, PRS_WORD_SZ width);

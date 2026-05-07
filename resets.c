@@ -3,19 +3,21 @@
 #endif
 #include<mulrob.h>
 
-void purge_retirement_unit(PRS_cpu *c)
+inline void purge_retirement_unit(PRS_cpu *c)
 {
 	PRS_RTUnit *rtu = &(c->rtu);
+	rtu->engaged = false;
+	return;
 }
 
-void reset_rob(PRS_ROBuffer *rob)
+inline void reset_rob(PRS_ROBuffer *rob)
 {
 	rob->ex = rob->rt;
 	rob->pf = rob->rt;
 	return;
 }
 
-void reset_cpu(PRS_cpu *c)
+inline void reset_cpu(PRS_cpu *c)
 {
 	purge_execution_unit(c);
 	purge_prefetch_unit(c);
