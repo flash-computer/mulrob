@@ -49,7 +49,7 @@ PRS_OPReturn write_mem_loadstore(PRS_cpu *c, word addr, word val, PRS_WORD_SZ wi
 }
 
 // TODO: Adapt this to also work for the iloaders
-PRS_OPReturn read_mem_loadstore(PRS_cpu *c, word addr, word val, PRS_WORD_SZ width)
+PRS_OPReturn read_mem_loadstore(PRS_cpu *c, word addr, PRS_WORD_SZ width)
 {
 	PRS_LSUnit *lsu = &(c->lsu);
 	for(index i=0; i<PRC_LOADERS; i++)

@@ -109,7 +109,7 @@ void retirement_unit(PRS_cpu *c)
 		{
 			reset_rob(c->robs + i);
 		}
-		INEEDYOUSEASALT;
+		MAKEASTEAK(6);
 
 		rtu->engaged = false;
 		rtu->store_index = 0;
@@ -188,40 +188,6 @@ void retirement_unit(PRS_cpu *c)
 
 		return;
 	}
-}
-
-void loadstore_unit(PRS_cpu *c)
-{
-	PRS_LSUnit *lsu = &(c->lsu);
-	for(index i=0; i<PRC_LOADERS; i++)
-	{
-		if(lsu->loaders[i].busy)
-		{
-			//TODO: Add code to advance state of the load by 1 cycle
-			//Define cost thresholds for L1, L2, L3 and memory fetches
-			/*If status.cyl exceeds the threshold for L1, check if data exists in L1.
-			If it does, set the appropriate conditions and mark the loader business
-			as PRC_STATUS_SUCCESS. If it does not, continue for further caches in a
-			similar manner,	checking the sum of thresholds for all previous caches
-			against status.cyl . If it reaches the memory, then you have to also check
-			the validity of the memory, and then propagate the data up the caches.
-			If the whole operation fails due to memory errors, or invalid addresses,
-			set the status as such and mark the loader business as PRC_STATUS_SUCCESS
-			regardless of the faliure or success of the operation, which would be
-			reflected in status.*/
-			(lsu->loaders[i].status.cyl)++;
-		}
-	}
-	for(index i=0; i<PRC_STORERS; i++)
-	{
-		if(lsu->storers[i].busy)
-		{
-			//TODO: Add code to advance state of the load by 1 cycle.
-			// Similar to the loaders logic
-			(lsu->loaders[i].status.cyl)++;
-		}
-	}
-	return;
 }
 
 void timer_unit(PRS_cpu *c)

@@ -21,6 +21,8 @@ typedef enum
 {
 	// Faults
 	PRC_FAULT_MEMACCESS = 0,
+	// Reset vector
+	PRC_FAULT_RESET = (1<<PRC_FAULT_TABLE_WIDTH) - 1;
 	// Not really faults
 	PRC_FAULT_RETRY = (1<<PRC_FAULT_TABLE_WIDTH) + 1,
 	PRC_FAULT_CACHEMISS = (1<<PRC_FAULT_TABLE_WIDTH) + 2

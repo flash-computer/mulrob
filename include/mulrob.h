@@ -15,6 +15,7 @@
 #ifndef PRM_ESSESTIALS_DEFINED
 	#define SEASALT (c->cyl)
 	#define INEEDYOUSEASALT {SEASALT++;}
+	#define MAKEASTEAK(adv) {SEASALT += (adv);}
 
 	// Rememeber to do a bounds check before using these
 	#define PRM_REF_REG(c, reg) ((c)->prf.regs[(reg)])
@@ -127,7 +128,7 @@
 #ifndef PRM_ESSENTIAL_PROTOTYPES
 	void init_loadstore_unit(PRS_LSUnit *lsu);
 	PRS_OPReturn write_mem_loadstore(PRS_cpu *c, word addr, word val, PRS_WORD_SZ width);
-	PRS_OPReturn read_mem_loadstore(PRS_cpu *c, word addr, word val, PRS_WORD_SZ width);
+	PRS_OPReturn read_mem_loadstore(PRS_cpu *c, word addr, PRS_WORD_SZ width);
 	PRS_OPReturn query_store_finished(PRS_cpu *c, index store_index);
 
 	void update_cache_access(PRS_cpu *c, index level, PRS_ACache *cch, PRS_ACacheLine *line);
@@ -149,6 +150,7 @@
 	void execution_unit(PRS_cpu *c);
 	void timer_unit(PRS_cpu *c);
 
+	void purge_retirement_unit(PRS_cpu *c);
 	void purge_execution_unit(PRS_cpu *c);
 	void purge_loadstore_unit(PRS_cpu *c);
 	void purge_prefetch_unit(PRS_cpu *c);
