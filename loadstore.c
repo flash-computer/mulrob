@@ -120,30 +120,6 @@ PRS_OPReturn query_load_finished(PRS_cpu *c, index idx)
 	}
 }
 
-PRS_OPReturn query_data_in_cache(PRS_ACache *cch, word addr, PRS_WORD_SZ width)
-{
-	if(!cch)
-	{
-		PRM_ERROR(PRC_E_UNEXPECTED)
-	}
-	// TODO: Add support for unaligned loads and stroes
-	word load_align_mask = width - 1;
-	if(addr & load_align_mask)
-	{
-		return (PRS_OPReturn){PRC_STATUS_FALIURE, 0, 1, PRC_FAULT_UNALIGNEDACCESS};
-	}
-	addr &= (~load_align_mask);
-	word lineaddr = addr & PRC_CACHELINEMASK;
-	for(index i=0; i<cch->size; i++)
-	{
-		if(cch->lines[i].addr & PRC_CACHELINEMASK == lineaddr)
-		{
-			return (PRS_OPReturn){PRC_STATUS_SUCCESS, get_little_endian(cch->lines[i].line + (addr & ~PRC_CACHELINEMASK), width), 1, 0};
-		}
-	}
-	return (PRS_OPReturn){PRC_STATUS_FALIURE, 0, 1, PRC_FAULT_CACHEMISS};
-}
-
 // TODO: Add loader logic for the iloader
 // TODO: Add support for loads and stores crossing the cache line boundary. Currently, trying to make such a load or store is just an error, and so loads and stores must be aligned to their width.
 void loadstore_unit(PRS_cpu *c)
