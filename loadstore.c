@@ -157,6 +157,8 @@ void loadstore_unit(PRS_cpu *c)
 		ls = lsu->loaders + i;
 		if(ls->busy == PRC_STATUS_BUSY)
 		{
+			//TODO: Loaders first try to access the currently active l0 cache from the branch buffer of the currently active RoB.
+			// If they find nothing there, they access the L1 and up caches normally, but do not save the results back in L0. Only writes fetch lines into l0.
 			for(int j = 0; j<PRC_CACHES && ls->status.cyl >= cost; j++)
 			{
 				cost = 0;
@@ -219,7 +221,7 @@ void loadstore_unit(PRS_cpu *c)
 		if(lsu->storers[i].busy)
 		{
 			//TODO: Add code to advance state of the store by 1 cycle.
-			// Similar to the loaders logic
+			// Storers first try to access l0
 		}
 	}
 	return;

@@ -39,6 +39,12 @@ typedef enum
 
 typedef enum
 {
+	PRC_MEMACCESS_READ = 0,
+	PRC_MEMACCESS_WRITE = 1
+} PRS_MEMACCESS_TYPE;
+
+typedef enum
+{
 	PRC_STATUS_FALIURE = 0x0,
 	PRC_STATUS_FREE = PRC_STATUS_FALIURE,	// Only defined in certain conditions, like if a loadstore unit is busy or free. Undefined otherwise.
 	PRC_STATUS_SUCCESS = 0x1,
@@ -50,7 +56,7 @@ typedef enum
 
 typedef enum
 {
-	PRC_DESTTYPE_REG, PRC_DESTTYPE_MEM, PRC_DESTTYPE_FAULT
+	PRC_DESTTYPE_REG, PRC_DESTTYPE_MEM, PRC_DESTTYPE_FAULT, PRC_DESTTYPE_NOP
 } PRS_DESTTYPE;
 
 typedef enum
@@ -142,12 +148,14 @@ typedef struct PRS_ACacheLine
 	struct PRS_ACacheLine *prev;
 } PRS_ACacheLine;
 
-typedef struct
+typedef struct PRS_ACache
 {
 	PRS_ACacheLine *lines;	// Array of CacheLines
 	index size;
 	index first;	// Index of the next CacheLine to replace.
 	index last;
+	struct PRS_ACache *next;
+	struct PRS_ACache *prev;
 } PRS_ACache;
 
 typedef struct
@@ -164,7 +172,7 @@ typedef struct
 typedef struct
 {
 	PRS_RATable rat;
-	PRS_ACache *l0;
+	PRS_ACache l0;
 } PRS_RATCacheEntry;
 
 typedef struct

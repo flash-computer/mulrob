@@ -10,6 +10,10 @@
 	#define PRC_BBENTRIES 16
 #endif
 
+#ifndef PRC_RATL0SIZE
+	#define PRC_RATL0SIZE 16
+#endif
+
 #ifndef PRC_INSTRUCTIONLOADERS
 	#define PRC_INSTRUCTIONLOADERS 16
 #endif

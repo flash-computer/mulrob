@@ -5,11 +5,15 @@
 
 const static PRS_OPReturn (*exec_units[])(PRS_cpu *, instruction) = {};
 
+void nop(word src1, word src22)
+{
+	return;
+}
+
 void undefined_instruction(word src1, word src2)
 {
 	PRM_ERROR(PRC_E_UNDEFINEDINSTRUCTION);
 }
-
 
 PRS_OPReturn decode_src_operand(byte oper, word aug)
 {

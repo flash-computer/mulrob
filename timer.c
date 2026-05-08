@@ -51,6 +51,8 @@ void retirement_unit(PRS_cpu *c)
 	{
 		case PRC_DESTTYPE_FAULT: // If the destination indicates a fault
 			goto fault_routine;
+		case PRC_DESTTYPE_NOP:
+			break;
 		case PRC_DESTTYPE_MEM:	// If the destination is a memory address
 			opr = write_mem_loadstore(c, dest.iden, re.val, re.width);
 			if(!opr.success)

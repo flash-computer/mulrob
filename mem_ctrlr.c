@@ -99,7 +99,7 @@ PRS_OPReturn replace_cache_line(PRS_cpu *c, index level, PRS_ACache *cch, PRS_AC
 	PRS_ACacheLine *rep = cch->lines + cch->first;
 	index repdex = cch->first;
 
-	if(level < PRC_CACHES && !(rep->synced))
+	if(level < PRC_CACHES && !(rep->synced) && rep->filled)
 	{
 		if(level < PRC_CACHES - 1)
 		{
@@ -134,23 +134,47 @@ PRS_OPReturn replace_cache_line(PRS_cpu *c, index level, PRS_ACache *cch, PRS_AC
 	return (PRS_OPReturn){PRC_STATUS_SUCCESS, rep->addr, 1, 0};
 }
 
-int init_acache(PRS_ACache *cch, index size)
+PRS_OPReturn query_data_in_cache(PRS_ACache *cch, word addr, PRS_WORD_SZ width)
 {
 	if(!cch)
 	{
-		return 1;
+		PRM_ERROR(PRC_E_UNEXPECTED)
+	}
+	// TODO: Add support for unaligned loads and stores
+	word load_align_mask = width - 1;
+	if(addr & load_align_mask)
+	{
+		return (PRS_OPReturn){PRC_STATUS_FALIURE, 0, 1, PRC_FAULT_UNALIGNEDACCESS};
+	}
+	addr &= (~load_align_mask);
+	word lineaddr = addr & PRC_CACHELINEMASK;
+	for(index i=0; i<cch->size; i++)
+	{
+		if(cch->lines[i].addr & PRC_CACHELINEMASK == lineaddr)
+		{
+			return (PRS_OPReturn){PRC_STATUS_SUCCESS, get_little_endian(cch->lines[i].line + (addr & ~PRC_CACHELINEMASK), width), 1, 0};
+		}
+	}
+	return (PRS_OPReturn){PRC_STATUS_FALIURE, 0, 1, PRC_FAULT_CACHEMISS};
+}
+
+void init_acache(PRS_ACache *cch, index size)
+{
+	if(!cch)
+	{
+		PRM_ERROR(PRC_E_UNEXPECTED);
 	}
 	cch->size = 0;
 	cch->lines = NULL;
 	cch->first = cch->last = size;
 	if(!size)
 	{
-		return 1;
+		PRM_ERROR(PRC_E_UNEXPECTED);
 	}
 	cch->lines = (PRS_ACacheLine *)malloc(size * sizeof(PRS_ACacheLine));
 	if(!(cch->lines))
 	{
-		return 1;
+		PRM_ERROR(PRC_E_UNEXPECTED);
 	}
 	cch->size = size;
 	for(index i=0; i<size; i++)
@@ -162,27 +186,23 @@ int init_acache(PRS_ACache *cch, index size)
 	}
 	cch->first = 0;
 	cch->last = size-1;
-	return 0;
+	return;
 }
 
-int init_memory_unit(PRS_MemUnit *mem)
+void init_memory_unit(PRS_MemUnit *mem)
 {
 	if(!mem)
 	{
-		return 1;
+		PRM_ERROR(PRC_E_UNEXPECTED);
 	}
-	if(!init_primary_mem(&(mem->mem)))
-	{
-		return 1;
-	}
+	init_primary_mem(&(mem->mem));
 	for(index i=0; i<PRC_CACHES; i++)
 	{
-		if(init_acache(mem->caches+i, cache_sizes(i)))
-		{
-			return 1;
-		}
+		init_acache(mem->caches+i, cache_sizes(i));
+		mem->caches[i].prev = (i)?(mem->caches + (i-1)):NULL;
+		mem->caches[i].next = (i ^ (PRC_CACHES - 1))?(mem->caches + (i+1)):NULL;
 	}
-	return 0;
+	return;
 }
 
 /* TODO: Rewrite needed
